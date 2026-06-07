@@ -1,6 +1,9 @@
 import requests
+import pandas as pd
 from datetime import datetime
-from app.database import mongo_collection
+from app.database import mongo_collection, SessionLocal, engine
+from app.models.personajes_sql import PokemonMaster, Base
+from sqlalchemy import text
 
 POKEAPI_BASE = "https://pokeapi.co/api/v2/pokemon"
 FUENTE       = "PokéAPI"
@@ -13,7 +16,6 @@ def extraer_pokemon(cantidad: int) -> dict:
     if cantidad <= 0:
         raise ValueError("La cantidad debe ser mayor a 0")
 
-    # 1. Obtener la lista de pokémon (paginación con limit/offset)
     lista_url = f"{POKEAPI_BASE}?limit={cantidad}&offset=0"
     lista_resp = requests.get(lista_url, timeout=10)
     lista_resp.raise_for_status()
@@ -22,16 +24,14 @@ def extraer_pokemon(cantidad: int) -> dict:
     guardados = 0
 
     for item in lista:
-        # 2. Llamar al endpoint individual de cada pokémon
         detalle_resp = requests.get(item["url"], timeout=10)
         if detalle_resp.status_code != 200:
             continue
 
         data = detalle_resp.json()
 
-        # 3. Construir el documento crudo
         documento = {
-            "_id": data["id"],          # PK natural = ID de la API
+            "_id": data["id"],
             "nombre": data["name"],
             "altura": data.get("height"),
             "peso": data.get("weight"),
@@ -44,7 +44,6 @@ def extraer_pokemon(cantidad: int) -> dict:
             "fecha_ingesta": datetime.utcnow().isoformat()
         }
 
-        # 4. Upsert — si ya existe no duplica, si no existe lo crea
         mongo_collection.update_one(
             {"_id": documento["_id"]},
             {"$set": documento},
@@ -59,10 +58,6 @@ def extraer_pokemon(cantidad: int) -> dict:
         "status": 201
     }
 
-import pandas as pd
-from datetime import datetime
-from app.database import mongo_collection, SessionLocal, engine
-from app.models.personajes_sql import PokemonMaster, Base
 
 def transformar_y_cargar() -> dict:
     """
@@ -82,30 +77,21 @@ def transformar_y_cargar() -> dict:
     # 2. Transformar con Pandas
     df = pd.DataFrame(documentos)
 
-    # Aplanar tipos
     df["tipo_primario"] = df["tipos"].apply(
         lambda x: x[0] if isinstance(x, list) and len(x) > 0 else "N/A"
     )
     df["tipo_secundario"] = df["tipos"].apply(
         lambda x: x[1] if isinstance(x, list) and len(x) > 1 else "N/A"
     )
-
-    # Aplanar habilidades
     df["habilidad_principal"] = df["habilidades"].apply(
         lambda x: x[0] if isinstance(x, list) and len(x) > 0 else "N/A"
     )
-
-    # Total de movimientos
     df["total_movimientos"] = df["movimientos"].apply(
         lambda x: len(x) if isinstance(x, list) else 0
     )
-
-    # Sprite URL
     df["sprite_url"] = df["sprites"].apply(
         lambda x: x.get("front_default", "N/A") if isinstance(x, dict) else "N/A"
     )
-
-    # Limpiar nulos
     df["altura"] = df["altura"].fillna(0).astype(int)
     df["peso"] = df["peso"].fillna(0).astype(int)
     df["experiencia_base"] = df["experiencia_base"].fillna(0).astype(int)
@@ -125,7 +111,6 @@ def transformar_y_cargar() -> dict:
             ).first()
 
             if existente:
-                # Actualizar
                 existente.nombre = row["nombre"]
                 existente.altura = int(row["altura"])
                 existente.peso = int(row["peso"])
@@ -138,7 +123,6 @@ def transformar_y_cargar() -> dict:
                 existente.sprite_url = row["sprite_url"]
                 existente.fecha_agregado = row["fecha_agregado"]
             else:
-                # Insertar nuevo
                 pokemon = PokemonMaster(
                     id_pokemon=int(row["_id"]),
                     nombre=row["nombre"],
@@ -176,6 +160,8 @@ def reset_pipeline() -> dict:
     """
     Limpia MongoDB y hace TRUNCATE en MySQL.
     """
+    print(f"[RESET] Iniciando limpieza - {datetime.utcnow()}")
+
     # 1. Limpiar MongoDB
     resultado_mongo = mongo_collection.delete_many({})
     mongo_docs_eliminados = resultado_mongo.deleted_count
@@ -183,7 +169,7 @@ def reset_pipeline() -> dict:
     # 2. TRUNCATE en MySQL
     db = SessionLocal()
     try:
-        db.execute(__import__('sqlalchemy').text("TRUNCATE TABLE pokemon_master"))
+        db.execute(text("TRUNCATE TABLE pokemon_master"))
         db.commit()
         mysql_rows_eliminadas = mongo_docs_eliminados
     except Exception as e:
@@ -192,9 +178,12 @@ def reset_pipeline() -> dict:
     finally:
         db.close()
 
+    print(f"[RESET] Completado - Mongo: {mongo_docs_eliminados}, MySQL: {mysql_rows_eliminadas}")
+
     return {
         "mensaje": "Sistema reseteado correctamente",
         "mongo_docs_eliminados": mongo_docs_eliminados,
         "mysql_rows_eliminadas": mysql_rows_eliminadas,
         "status": 200
     }
+    
