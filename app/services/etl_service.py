@@ -70,6 +70,8 @@ def transformar_y_cargar() -> dict:
         raise ValueError("No hay datos en MongoDB. Ejecute primero el endpoint /extraer.")
 
     # 2. Transformar con Pandas
+    # Se aplanan los campos anidados (tipos, habilidades, sprites)
+    # y se calculan campos derivados (total_movimientos, es_legendario)
     df = pd.DataFrame(documentos)
 
     df["tipo_primario"] = df["tipos"].apply(
