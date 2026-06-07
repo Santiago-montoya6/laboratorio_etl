@@ -6,6 +6,7 @@ router = APIRouter(prefix="/api/v1/etl", tags=["ETL"])
 
 @router.post("/extraer", response_model=ExtraccionResponse, status_code=201)
 def extraer(body: ExtraccionRequest):
+    """Extrae datos de la PokéAPI y los guarda crudos en MongoDB."""
     try:
         resultado = etl_service.extraer_pokemon(body.cantidad)
         return resultado
@@ -16,6 +17,7 @@ def extraer(body: ExtraccionRequest):
 
 @router.post("/transformar", status_code=200)
 def transformar():
+    """Lee de MongoDB, transforma con Pandas y carga en MySQL."""
     try:
         resultado = etl_service.transformar_y_cargar()
         return resultado
@@ -24,6 +26,7 @@ def transformar():
 
 @router.delete("/reset", status_code=200)
 def reset():
+    """Limpia MongoDB (delete_many) y MySQL (TRUNCATE)."""
     try:
         resultado = etl_service.reset_pipeline()
         return resultado
