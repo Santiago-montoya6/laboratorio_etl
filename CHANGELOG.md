@@ -1,5 +1,14 @@
 # Changelog — Integrante 2 (Transform/Load + Reset)
 
+## [v1.5] - Noveno commit
+- Comentario explicativo en TRUNCATE de reset
+
+## [v1.4] - Octavo commit
+- Comentarios explicativos en transformacion
+
+## [v1.3.1] - Septimo commit
+- Creación de changelog con historial de cambios
+
 ## [v1.3] - Sexto commit
 - Manejo de error si MongoDB está vacío al transformar
 
