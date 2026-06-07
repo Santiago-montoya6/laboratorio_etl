@@ -65,7 +65,7 @@ def transformar_y_cargar() -> dict:
     y los carga en MySQL con idempotencia.
     """
     # 1. Leer datos crudos de MongoDB
-    documentos = list(mongo_collection.find())
+    documentos = list(mongo_collection.find({}, {"_id": 1, "nombre": 1, "altura": 1, "peso": 1, "experiencia_base": 1, "tipos": 1, "habilidades": 1, "movimientos": 1, "sprites": 1}))
     if not documentos:
         return {
             "mensaje": "No hay datos en MongoDB para transformar",
@@ -186,4 +186,3 @@ def reset_pipeline() -> dict:
         "mysql_rows_eliminadas": mysql_rows_eliminadas,
         "status": 200
     }
-    
