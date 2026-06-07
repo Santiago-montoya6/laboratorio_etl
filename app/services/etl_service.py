@@ -58,3 +58,143 @@ def extraer_pokemon(cantidad: int) -> dict:
         "fuente": FUENTE,
         "status": 201
     }
+
+import pandas as pd
+from datetime import datetime
+from app.database import mongo_collection, SessionLocal, engine
+from app.models.personajes_sql import PokemonMaster, Base
+
+def transformar_y_cargar() -> dict:
+    """
+    Lee datos crudos de MongoDB, los transforma con Pandas
+    y los carga en MySQL con idempotencia.
+    """
+    # 1. Leer datos crudos de MongoDB
+    documentos = list(mongo_collection.find())
+    if not documentos:
+        return {
+            "mensaje": "No hay datos en MongoDB para transformar",
+            "registros_procesados": 0,
+            "tabla_destino": "pokemon_master",
+            "status": 200
+        }
+
+    # 2. Transformar con Pandas
+    df = pd.DataFrame(documentos)
+
+    # Aplanar tipos
+    df["tipo_primario"] = df["tipos"].apply(
+        lambda x: x[0] if isinstance(x, list) and len(x) > 0 else "N/A"
+    )
+    df["tipo_secundario"] = df["tipos"].apply(
+        lambda x: x[1] if isinstance(x, list) and len(x) > 1 else "N/A"
+    )
+
+    # Aplanar habilidades
+    df["habilidad_principal"] = df["habilidades"].apply(
+        lambda x: x[0] if isinstance(x, list) and len(x) > 0 else "N/A"
+    )
+
+    # Total de movimientos
+    df["total_movimientos"] = df["movimientos"].apply(
+        lambda x: len(x) if isinstance(x, list) else 0
+    )
+
+    # Sprite URL
+    df["sprite_url"] = df["sprites"].apply(
+        lambda x: x.get("front_default", "N/A") if isinstance(x, dict) else "N/A"
+    )
+
+    # Limpiar nulos
+    df["altura"] = df["altura"].fillna(0).astype(int)
+    df["peso"] = df["peso"].fillna(0).astype(int)
+    df["experiencia_base"] = df["experiencia_base"].fillna(0).astype(int)
+    df["es_legendario"] = False
+    df["fecha_agregado"] = datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S")
+
+    # 3. Crear tabla si no existe
+    Base.metadata.create_all(bind=engine)
+
+    # 4. Cargar en MySQL con idempotencia
+    db = SessionLocal()
+    procesados = 0
+    try:
+        for _, row in df.iterrows():
+            existente = db.query(PokemonMaster).filter(
+                PokemonMaster.id_pokemon == int(row["_id"])
+            ).first()
+
+            if existente:
+                # Actualizar
+                existente.nombre = row["nombre"]
+                existente.altura = int(row["altura"])
+                existente.peso = int(row["peso"])
+                existente.experiencia_base = int(row["experiencia_base"])
+                existente.tipo_primario = row["tipo_primario"]
+                existente.tipo_secundario = row["tipo_secundario"]
+                existente.habilidad_principal = row["habilidad_principal"]
+                existente.es_legendario = bool(row["es_legendario"])
+                existente.total_movimientos = int(row["total_movimientos"])
+                existente.sprite_url = row["sprite_url"]
+                existente.fecha_agregado = row["fecha_agregado"]
+            else:
+                # Insertar nuevo
+                pokemon = PokemonMaster(
+                    id_pokemon=int(row["_id"]),
+                    nombre=row["nombre"],
+                    altura=int(row["altura"]),
+                    peso=int(row["peso"]),
+                    experiencia_base=int(row["experiencia_base"]),
+                    tipo_primario=row["tipo_primario"],
+                    tipo_secundario=row["tipo_secundario"],
+                    habilidad_principal=row["habilidad_principal"],
+                    es_legendario=bool(row["es_legendario"]),
+                    total_movimientos=int(row["total_movimientos"]),
+                    sprite_url=row["sprite_url"],
+                    fecha_agregado=row["fecha_agregado"]
+                )
+                db.add(pokemon)
+
+            procesados += 1
+
+        db.commit()
+    except Exception as e:
+        db.rollback()
+        raise e
+    finally:
+        db.close()
+
+    return {
+        "mensaje": "Pipeline finalizado",
+        "registros_procesados": procesados,
+        "tabla_destino": "pokemon_master",
+        "status": 200
+    }
+
+
+def reset_pipeline() -> dict:
+    """
+    Limpia MongoDB y hace TRUNCATE en MySQL.
+    """
+    # 1. Limpiar MongoDB
+    resultado_mongo = mongo_collection.delete_many({})
+    mongo_docs_eliminados = resultado_mongo.deleted_count
+
+    # 2. TRUNCATE en MySQL
+    db = SessionLocal()
+    try:
+        db.execute(__import__('sqlalchemy').text("TRUNCATE TABLE pokemon_master"))
+        db.commit()
+        mysql_rows_eliminadas = mongo_docs_eliminados
+    except Exception as e:
+        db.rollback()
+        raise e
+    finally:
+        db.close()
+
+    return {
+        "mensaje": "Sistema reseteado correctamente",
+        "mongo_docs_eliminados": mongo_docs_eliminados,
+        "mysql_rows_eliminadas": mysql_rows_eliminadas,
+        "status": 200
+    }
