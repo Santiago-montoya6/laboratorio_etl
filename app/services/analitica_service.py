@@ -25,8 +25,8 @@ class AnaliticaService:
             return True, col.type, type(col.type)
         except Exception as e:
             return False, None, None
-        
-@staticmethod
+    
+    @staticmethod
     def _detectar_tipo(col_data, tipo_sql):
         """Detecta dinámicamente el tipo de la columna basado en SQLAlchemy Type."""
         tipo_str = str(tipo_sql).upper()
@@ -45,72 +45,8 @@ class AnaliticaService:
         """Retorna lista de columnas válidas de la tabla."""
         inspector = inspect(PokemonMaster)
         return [col.name for col in inspector.columns]
-
-@staticmethod
-    def _analizar_categorica(column_name: str, col_data) -> dict:
-        """Análisis para columnas categóricas (texto con valores repetidos)."""
-        value_counts = col_data.value_counts().to_dict()
-        return {
-            "columna": column_name,
-            "tipo": "categorica",
-            "valores_unicos": col_data.nunique(),
-            "distribucion": value_counts,
-            "valor_mas_comun": col_data.mode()[0] if not col_data.mode().empty else None,
-            "nulos": int(col_data.isna().sum())
-        }
-
-@staticmethod
-    def _analizar_numerica(column_name: str, col_data) -> dict:
-        """Análisis para columnas numéricas (INT, FLOAT, DECIMAL)."""
-        return {
-            "columna": column_name,
-            "tipo": "numerica",
-            "min": float(col_data.min()) if not col_data.isna().all() else None,
-            "max": float(col_data.max()) if not col_data.isna().all() else None,
-            "promedio": float(col_data.mean()) if not col_data.isna().all() else None,
-            "mediana": float(col_data.median()) if not col_data.isna().all() else None,
-            "desviacion_std": float(col_data.std()) if not col_data.isna().all() else None,
-            "nulos": int(col_data.isna().sum())
-        }
-
-@staticmethod
-    def _analizar_numerica(column_name: str, col_data) -> dict:
-        """Análisis para columnas numéricas (INT, FLOAT, DECIMAL)."""
-        return {
-            "columna": column_name,
-            "tipo": "numerica",
-            "min": float(col_data.min()) if not col_data.isna().all() else None,
-            "max": float(col_data.max()) if not col_data.isna().all() else None,
-            "promedio": float(col_data.mean()) if not col_data.isna().all() else None,
-            "mediana": float(col_data.median()) if not col_data.isna().all() else None,
-            "desviacion_std": float(col_data.std()) if not col_data.isna().all() else None,
-            "nulos": int(col_data.isna().sum())
-        }
-
-@staticmethod
-    def _analizar_fecha(column_name: str, col_data) -> dict:
-        """Análisis para columnas de fecha (DATE, DATETIME)."""
-        col_data = pd.to_datetime(col_data, errors='coerce')
-        return {
-            "columna": column_name,
-            "tipo": "fecha",
-            "min": str(col_data.min().date()) if not col_data.isna().all() else None,
-            "max": str(col_data.max().date()) if not col_data.isna().all() else None,
-            "rango_dias": int((col_data.max() - col_data.min()).days) if not col_data.isna().all() else None,
-            "nulos": int(col_data.isna().sum())
-        }
-
-@staticmethod
-    def _analizar_booleana(column_name: str, col_data) -> dict:
-        """Análisis para columnas booleanas (BOOLEAN, BIT)."""
-        return {
-            "columna": column_name,
-            "tipo": "booleana",
-            "true": int((col_data == True).sum()),
-            "false": int((col_data == False).sum()),
-            "nulos": int(col_data.isna().sum())
-        }
-@staticmethod
+    
+    @staticmethod
     def analizar_columna(column_name: str) -> dict:
         """
         Análisis dinámico de una columna según su tipo.
@@ -157,8 +93,59 @@ class AnaliticaService:
         
         except Exception as e:
             return {"error": f"Error al analizar columna: {str(e)}"}
-        
-@staticmethod
+    
+    @staticmethod
+    def _analizar_categorica(column_name: str, col_data) -> dict:
+        """Análisis para columnas categóricas (texto con valores repetidos)."""
+        value_counts = col_data.value_counts().to_dict()
+        return {
+            "columna": column_name,
+            "tipo": "categorica",
+            "valores_unicos": col_data.nunique(),
+            "distribucion": value_counts,
+            "valor_mas_comun": col_data.mode()[0] if not col_data.mode().empty else None,
+            "nulos": int(col_data.isna().sum())
+        }
+    
+    @staticmethod
+    def _analizar_numerica(column_name: str, col_data) -> dict:
+        """Análisis para columnas numéricas (INT, FLOAT, DECIMAL)."""
+        return {
+            "columna": column_name,
+            "tipo": "numerica",
+            "min": float(col_data.min()) if not col_data.isna().all() else None,
+            "max": float(col_data.max()) if not col_data.isna().all() else None,
+            "promedio": float(col_data.mean()) if not col_data.isna().all() else None,
+            "mediana": float(col_data.median()) if not col_data.isna().all() else None,
+            "desviacion_std": float(col_data.std()) if not col_data.isna().all() else None,
+            "nulos": int(col_data.isna().sum())
+        }
+    
+    @staticmethod
+    def _analizar_fecha(column_name: str, col_data) -> dict:
+        """Análisis para columnas de fecha (DATE, DATETIME)."""
+        col_data = pd.to_datetime(col_data, errors='coerce')
+        return {
+            "columna": column_name,
+            "tipo": "fecha",
+            "min": str(col_data.min().date()) if not col_data.isna().all() else None,
+            "max": str(col_data.max().date()) if not col_data.isna().all() else None,
+            "rango_dias": int((col_data.max() - col_data.min()).days) if not col_data.isna().all() else None,
+            "nulos": int(col_data.isna().sum())
+        }
+    
+    @staticmethod
+    def _analizar_booleana(column_name: str, col_data) -> dict:
+        """Análisis para columnas booleanas (BOOLEAN, BIT)."""
+        return {
+            "columna": column_name,
+            "tipo": "booleana",
+            "true": int((col_data == True).sum()),
+            "false": int((col_data == False).sum()),
+            "nulos": int(col_data.isna().sum())
+        }
+    
+    @staticmethod
     def obtener_perfil_dual(pokemon_id: int) -> dict:
         """
         Retorna el mismo registro visto desde Mongo y MySQL.
