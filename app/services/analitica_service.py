@@ -100,3 +100,13 @@ class AnaliticaService:
             "nulos": int(col_data.isna().sum())
         }
 
+@staticmethod
+    def _analizar_booleana(column_name: str, col_data) -> dict:
+        """Análisis para columnas booleanas (BOOLEAN, BIT)."""
+        return {
+            "columna": column_name,
+            "tipo": "booleana",
+            "true": int((col_data == True).sum()),
+            "false": int((col_data == False).sum()),
+            "nulos": int(col_data.isna().sum())
+        }
