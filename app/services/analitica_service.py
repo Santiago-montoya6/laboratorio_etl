@@ -158,3 +158,57 @@ class AnaliticaService:
         except Exception as e:
             return {"error": f"Error al analizar columna: {str(e)}"}
         
+@staticmethod
+    def obtener_perfil_dual(pokemon_id: int) -> dict:
+        """
+        Retorna el mismo registro visto desde Mongo y MySQL.
+        Valida alineación de PKs y maneja 3 casos.
+        """
+        db = SessionLocal()
+        try:
+            # Consulta Mongo
+            vista_mongo = mongo_collection.find_one({"_id": pokemon_id})
+            
+            # Consulta MySQL
+            vista_sql = db.query(PokemonMaster).filter(PokemonMaster.id_pokemon == pokemon_id).first()
+            
+            # Convertir SQL a dict
+            vista_sql_dict = None
+            if vista_sql:
+                vista_sql_dict = {
+                    col.name: getattr(vista_sql, col.name)
+                    for col in inspect(PokemonMaster).columns
+                }
+            
+            # Caso 1: En ambas bases
+            if vista_mongo and vista_sql:
+                return {
+                    "id": pokemon_id,
+                    "vista_mongo": {k: v for k, v in vista_mongo.items() if k != "_id"},
+                    "vista_sql": vista_sql_dict
+                }
+            # Caso 2: Solo en Mongo
+            elif vista_mongo and not vista_sql:
+                return {
+                    "id": pokemon_id,
+                    "vista_mongo": {k: v for k, v in vista_mongo.items() if k != "_id"},
+                    "vista_sql": None,
+                    "warning": "Registro existe en Mongo pero no en MySQL. Posiblemente no se ejecutó /transformar o falló."
+                }
+            # Caso 3: Solo en SQL
+            elif not vista_mongo and vista_sql:
+                return {
+                    "id": pokemon_id,
+                    "vista_mongo": None,
+                    "vista_sql": vista_sql_dict,
+                    "warning": "Registro existe en MySQL pero no en Mongo. Posiblemente fue eliminado."
+                }
+            # Caso 4: En ninguna
+            else:
+                return {"error": "Registro no existe en ninguna base de datos", "id": pokemon_id}
+        
+        except Exception as e:
+            return {"error": f"Error al obtener perfil dual: {str(e)}"}
+        finally:
+            db.close()
+
