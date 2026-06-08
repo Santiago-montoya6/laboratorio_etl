@@ -1,4 +1,5 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, HTTPException
+from app.services.analitica_service import AnaliticaService
 
 router = APIRouter(prefix="/api/v1", tags=["Analítica"])
 
