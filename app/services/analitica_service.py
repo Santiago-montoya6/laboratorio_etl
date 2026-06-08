@@ -86,3 +86,17 @@ class AnaliticaService:
             "desviacion_std": float(col_data.std()) if not col_data.isna().all() else None,
             "nulos": int(col_data.isna().sum())
         }
+
+@staticmethod
+    def _analizar_fecha(column_name: str, col_data) -> dict:
+        """Análisis para columnas de fecha (DATE, DATETIME)."""
+        col_data = pd.to_datetime(col_data, errors='coerce')
+        return {
+            "columna": column_name,
+            "tipo": "fecha",
+            "min": str(col_data.min().date()) if not col_data.isna().all() else None,
+            "max": str(col_data.max().date()) if not col_data.isna().all() else None,
+            "rango_dias": int((col_data.max() - col_data.min()).days) if not col_data.isna().all() else None,
+            "nulos": int(col_data.isna().sum())
+        }
+
