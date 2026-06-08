@@ -59,3 +59,30 @@ class AnaliticaService:
             "nulos": int(col_data.isna().sum())
         }
 
+@staticmethod
+    def _analizar_numerica(column_name: str, col_data) -> dict:
+        """Análisis para columnas numéricas (INT, FLOAT, DECIMAL)."""
+        return {
+            "columna": column_name,
+            "tipo": "numerica",
+            "min": float(col_data.min()) if not col_data.isna().all() else None,
+            "max": float(col_data.max()) if not col_data.isna().all() else None,
+            "promedio": float(col_data.mean()) if not col_data.isna().all() else None,
+            "mediana": float(col_data.median()) if not col_data.isna().all() else None,
+            "desviacion_std": float(col_data.std()) if not col_data.isna().all() else None,
+            "nulos": int(col_data.isna().sum())
+        }
+
+@staticmethod
+    def _analizar_numerica(column_name: str, col_data) -> dict:
+        """Análisis para columnas numéricas (INT, FLOAT, DECIMAL)."""
+        return {
+            "columna": column_name,
+            "tipo": "numerica",
+            "min": float(col_data.min()) if not col_data.isna().all() else None,
+            "max": float(col_data.max()) if not col_data.isna().all() else None,
+            "promedio": float(col_data.mean()) if not col_data.isna().all() else None,
+            "mediana": float(col_data.median()) if not col_data.isna().all() else None,
+            "desviacion_std": float(col_data.std()) if not col_data.isna().all() else None,
+            "nulos": int(col_data.isna().sum())
+        }
