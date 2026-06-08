@@ -1,8 +1,14 @@
 from fastapi import FastAPI
-from app.database import Base, engine
+from app.database import Base, engine, create_database
 from app.controllers import etl_controller, analitica_controller
 
-# Crear tablas si no existen (resiliencia)
+# Crear base de datos si no existe (automático)
+try:
+    create_database()
+except Exception as e:
+    print(f"Advertencia al crear BD: {e}")
+
+# Crear tablas si no existen
 Base.metadata.create_all(bind=engine)
 
 app = FastAPI(
