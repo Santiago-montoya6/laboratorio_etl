@@ -110,3 +110,51 @@ class AnaliticaService:
             "false": int((col_data == False).sum()),
             "nulos": int(col_data.isna().sum())
         }
+@staticmethod
+    def analizar_columna(column_name: str) -> dict:
+        """
+        Análisis dinámico de una columna según su tipo.
+        Soporta: categórica, numérica, fecha, booleana.
+        """
+        existe, tipo_sql, tipo_python = AnaliticaService.get_column_info(column_name)
+        
+        if not existe:
+            return {
+                "error": f"Columna '{column_name}' no existe",
+                "columnas_validas": AnaliticaService.get_valid_columns()
+            }
+        
+        try:
+            db = SessionLocal()
+            # Obtener datos en DataFrame
+            query = db.query(PokemonMaster).all()
+            data = [
+                {col.name: getattr(row, col.name) for col in inspect(PokemonMaster).columns}
+                for row in query
+            ]
+            db.close()
+            
+            df = pd.DataFrame(data)
+            
+            if df.empty:
+                return {"error": "No hay datos en la tabla"}
+            
+            # Detectar tipo dinámicamente
+            col_data = df[column_name]
+            tipo_detectado = AnaliticaService._detectar_tipo(col_data, tipo_sql)
+            
+            # Análisis según tipo
+            if tipo_detectado == "categorica":
+                return AnaliticaService._analizar_categorica(column_name, col_data)
+            elif tipo_detectado == "numerica":
+                return AnaliticaService._analizar_numerica(column_name, col_data)
+            elif tipo_detectado == "fecha":
+                return AnaliticaService._analizar_fecha(column_name, col_data)
+            elif tipo_detectado == "booleana":
+                return AnaliticaService._analizar_booleana(column_name, col_data)
+            else:
+                return {"error": f"Tipo no soportado: {tipo_detectado}"}
+        
+        except Exception as e:
+            return {"error": f"Error al analizar columna: {str(e)}"}
+        
