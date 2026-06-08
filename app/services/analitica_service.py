@@ -26,4 +26,23 @@ class AnaliticaService:
         except Exception as e:
             return False, None, None
         
+@staticmethod
+    def _detectar_tipo(col_data, tipo_sql):
+        """Detecta dinámicamente el tipo de la columna basado en SQLAlchemy Type."""
+        tipo_str = str(tipo_sql).upper()
         
+        if "BOOL" in tipo_str or "BIT" in tipo_str:
+            return "booleana"
+        elif "INT" in tipo_str or "FLOAT" in tipo_str or "DECIMAL" in tipo_str or "DOUBLE" in tipo_str:
+            return "numerica"
+        elif "DATE" in tipo_str or "DATETIME" in tipo_str or "TIME" in tipo_str:
+            return "fecha"
+        else:
+            return "categorica"
+    
+    @staticmethod
+    def get_valid_columns() -> list:
+        """Retorna lista de columnas válidas de la tabla."""
+        inspector = inspect(PokemonMaster)
+        return [col.name for col in inspector.columns]
+
