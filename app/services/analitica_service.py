@@ -46,3 +46,16 @@ class AnaliticaService:
         inspector = inspect(PokemonMaster)
         return [col.name for col in inspector.columns]
 
+@staticmethod
+    def _analizar_categorica(column_name: str, col_data) -> dict:
+        """Análisis para columnas categóricas (texto con valores repetidos)."""
+        value_counts = col_data.value_counts().to_dict()
+        return {
+            "columna": column_name,
+            "tipo": "categorica",
+            "valores_unicos": col_data.nunique(),
+            "distribucion": value_counts,
+            "valor_mas_comun": col_data.mode()[0] if not col_data.mode().empty else None,
+            "nulos": int(col_data.isna().sum())
+        }
+
