@@ -164,7 +164,7 @@ Documentación Swagger en `http://127.0.0.1:8000/docs`
 | `es_legendario` | BOOLEAN | Si es legendario |
 | `total_movimientos` | INT | Cantidad de movimientos |
 | `sprite_url` | VARCHAR | URL de la imagen |
-| `fecha_agregado` | VARCHAR | Fecha de ingesta |
+| `fecha_agregado` | DateTime | Fecha de ingesta |
 
 ---
 
