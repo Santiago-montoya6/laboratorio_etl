@@ -93,7 +93,7 @@ def transformar_y_cargar() -> dict:
     df["peso"] = df["peso"].fillna(0).astype(int)
     df["experiencia_base"] = df["experiencia_base"].fillna(0).astype(int)
     df["es_legendario"] = False
-    df["fecha_agregado"] = datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S")
+    df['fecha_agregado'] = pd.to_datetime(df['fecha_agregado'])
 
     # 3. Crear tabla si no existe
     Base.metadata.create_all(bind=engine)

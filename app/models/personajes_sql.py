@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Boolean, Date
+from sqlalchemy import Column, Integer, String, Boolean, DateTime
 from app.database import Base
 
 class PokemonMaster(Base):
@@ -16,4 +16,4 @@ class PokemonMaster(Base):
     es_legendario    = Column(Boolean, nullable=True)        # derivado de species
     total_movimientos = Column(Integer, nullable=True)       # len(moves[])
     sprite_url       = Column(String(255), nullable=True)
-    fecha_agregado   = Column(String(30), nullable=True)     # created no existe en PokeAPI, usamos fecha actual
+    fecha_agregado = Column(DateTime, nullable=True)
